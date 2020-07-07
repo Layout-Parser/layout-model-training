@@ -1,0 +1,6 @@
+layoutparser
+funcy
+bs4
+scikit-learn
+imagesize
+tqdm
