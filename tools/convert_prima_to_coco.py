@@ -38,7 +38,7 @@ def _create_category(schema=0):
     if schema==0:
         
         categories = \
-            [{"supercategory": "layout", "id": 1, "name": "Background"},
+            [{"supercategory": "layout", "id": 0, "name": "Background"},
              {"supercategory": "layout", "id": 1, "name": "TextRegion"},
              {"supercategory": "layout", "id": 2, "name": "ImageRegion"},
              {"supercategory": "layout", "id": 3, "name": "TableRegion"},
