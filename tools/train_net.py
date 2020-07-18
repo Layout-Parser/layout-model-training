@@ -61,6 +61,17 @@ class Trainer(DefaultTrainer):
         res = OrderedDict({k + "_TTA": v for k, v in res.items()})
         return res
 
+    @classmethod
+    def eval_and_save(cls, cfg, model):
+        evaluators = [
+            cls.build_evaluator(
+                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference")
+            )
+            for name in cfg.DATASETS.TEST
+        ]
+        res = cls.test(cfg, model, evaluators)
+        pd.DataFrame(res).to_csv(os.path.join(cfg.OUTPUT_DIR, 'eval.csv'))
+        return res
 
 def setup(args):
     """
@@ -110,6 +121,9 @@ def main(args):
     """
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
+    trainer.register_hooks(
+            [hooks.EvalHook(0, lambda: trainer.eval_and_save(cfg, trainer.model))]
+    )
     if cfg.TEST.AUG.ENABLED:
         trainer.register_hooks(
             [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
