@@ -6,19 +6,18 @@ import funcy
 from sklearn.model_selection import train_test_split
 
 parser = argparse.ArgumentParser(description='Splits COCO annotations file into training and test sets.')
-parser.add_argument('annotations', metavar='coco_annotations', type=str,
+parser.add_argument('--annotation_path', metavar='coco_annotations', type=str,
                     help='Path to COCO annotations file.')
-parser.add_argument('train', type=str, help='Where to store COCO training annotations')
-parser.add_argument('test', type=str, help='Where to store COCO test annotations')
-parser.add_argument('-s', dest='split_ratio', type=float, required=True,
+parser.add_argument('--train', type=str, help='Where to store COCO training annotations')
+parser.add_argument('--test', type=str, help='Where to store COCO test annotations')
+parser.add_argument('--s', dest='split_ratio', type=float, required=True,
                     help="A percentage of a split; a number in (0, 1)")
 parser.add_argument('--having-annotations', dest='having_annotations', action='store_true',
                     help='Ignore all images without annotations. Keep only these with at least one annotation')
 
-def save_coco(file, info, licenses, images, annotations, categories):
+def save_coco(file, tagged_data):
     with open(file, 'wt', encoding='UTF-8') as coco:
-        json.dump({ 'info': info, 'licenses': licenses, 'images': images, 
-            'annotations': annotations, 'categories': categories}, coco, indent=2, sort_keys=True)
+        json.dump(tagged_data, coco, indent=2, sort_keys=True)
 
 def filter_annotations(annotations, images):
     image_ids = funcy.lmap(lambda i: int(i['id']), images)
@@ -33,11 +32,9 @@ def main(annotation_path,
 
     with open(annotation_path, 'rt', encoding='UTF-8') as annotations:
         coco = json.load(annotations)
-        info = coco['info']
-        licenses = coco['licenses']
+
         images = coco['images']
         annotations = coco['annotations']
-        categories = coco['categories']
 
         number_of_images = len(images)
 
@@ -48,8 +45,15 @@ def main(annotation_path,
 
         x, y = train_test_split(images, train_size=split_ratio, random_state=random_state)
 
-        save_coco(train_save_path, info, licenses, x, filter_annotations(annotations, x), categories)
-        save_coco(test_save_path, info, licenses, y, filter_annotations(annotations, y), categories)
+        # Train Data
+        coco.update({'images': x,
+                     'annotations': filter_annotations(annotations, x)})
+        save_coco(train_save_path, coco)
+
+        # Test Data
+        coco.update({'images': y,
+                     'annotations': filter_annotations(annotations, y)})
+        save_coco(test_save_path, coco)
 
         print("Saved {} entries in {} and {} in {}".format(len(x), train_save_path, len(y), test_save_path))
 
