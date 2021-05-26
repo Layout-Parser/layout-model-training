@@ -6,20 +6,15 @@ import logging
 import os
 import json
 from collections import OrderedDict
-import torch
-import sys 
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 
-from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
 
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
 from detectron2.evaluation import (
     COCOEvaluator,
-    DatasetEvaluators,
-    SemSegEvaluator,
     verify_results,
 )
 from detectron2.modeling import GeneralizedRCNNWithTTA
@@ -114,6 +109,9 @@ def main(args):
         pd.DataFrame(res).to_csv(f'{cfg.OUTPUT_DIR}/eval.csv')
         return res
 
+    # Ensure that the Output directory exists
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+
     """
     If you'd like to do anything fancier than the standard training logic,
     consider writing your own training loop (see plain_train_net.py) or
@@ -135,22 +133,22 @@ if __name__ == "__main__":
     parser = default_argument_parser()
 
     # Extra Configurations for dataset names and paths
-    parser.add_argument("--dataset_name",          default="", help="The Dataset Name")
+    parser.add_argument("--dataset_name", default="", help="The Dataset Name")
     parser.add_argument("--json_annotation_train", default="", metavar="FILE", help="The path to the training set JSON annotation")
-    parser.add_argument("--image_path_train",      default="", metavar="FILE", help="The path to the training set image folder")
-    parser.add_argument("--json_annotation_val",   default="", metavar="FILE", help="The path to the validation set JSON annotation")
-    parser.add_argument("--image_path_val",        default="", metavar="FILE", help="The path to the validation set image folder")
+    parser.add_argument("--image_path_train", default="", metavar="FILE", help="The path to the training set image folder")
+    parser.add_argument("--json_annotation_val", default="", metavar="FILE", help="The path to the validation set JSON annotation")
+    parser.add_argument("--image_path_val", default="", metavar="FILE", help="The path to the validation set image folder")
 
     args = parser.parse_args()
     print("Command Line Args:", args)
-    
+
     # Register Datasets 
     dataset_name = args.dataset_name
     register_coco_instances(f"{dataset_name}-train", {}, 
                             args.json_annotation_train, 
                             args.image_path_train)
 
-    register_coco_instances(f"{dataset_name}-val",   {}, 
+    register_coco_instances(f"{dataset_name}-val", {}, 
                             args.json_annotation_val,   
                             args.image_path_val)
 
