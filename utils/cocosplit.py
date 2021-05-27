@@ -38,24 +38,42 @@ def main(annotation_path,
 
         number_of_images = len(images)
 
-        images_with_annotations = funcy.lmap(lambda a: int(a['image_id']), annotations)
+        ids_with_annotations = funcy.lmap(lambda a: int(a['image_id']), annotations)
+
+        # Images with annotations
+        img_ann = funcy.lremove(lambda i: i['id'] not in ids_with_annotations, images)
+        tr_ann, ts_ann = train_test_split(img_ann, train_size=split_ratio,
+                                          random_state=random_state)
+
+        # Images without annotations
+        img_wo_ann = funcy.lremove(lambda i: i['id'] in ids_with_annotations, images)
+        tr_wo_ann, ts_wo_ann = train_test_split(img_wo_ann, train_size=split_ratio,
+                                                random_state=random_state)
 
         if having_annotations:
-            images = funcy.lremove(lambda i: i['id'] not in images_with_annotations, images)
+            tr, ts = tr_ann, ts_ann
 
-        x, y = train_test_split(images, train_size=split_ratio, random_state=random_state)
+        else:
+            # Merging the 2 image lists (i.e. with and without annotation)
+            tr_ann.extend(tr_wo_ann)
+            ts_ann.extend(ts_wo_ann)
+
+            tr, ts = tr_ann, ts_ann
 
         # Train Data
-        coco.update({'images': x,
-                     'annotations': filter_annotations(annotations, x)})
+        coco.update({'images': tr,
+                     'annotations': filter_annotations(annotations, tr)})
         save_coco(train_save_path, coco)
 
         # Test Data
-        coco.update({'images': y,
-                     'annotations': filter_annotations(annotations, y)})
+        coco.update({'images': ts,
+                     'annotations': filter_annotations(annotations, ts)})
         save_coco(test_save_path, coco)
 
-        print("Saved {} entries in {} and {} in {}".format(len(x), train_save_path, len(y), test_save_path))
+        print("Saved {} entries in {} and {} in {}".format(len(tr),
+                                                           train_save_path,
+                                                           len(ts),
+                                                           test_save_path))
 
 
 if __name__ == "__main__":
