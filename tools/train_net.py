@@ -73,7 +73,8 @@ def setup(args):
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
-    cfg.merge_from_file(args.config_file)
+    if args.config_file != "":
+        cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
 
     with open(args.json_annotation_train, 'r') as fp:
