@@ -7,8 +7,10 @@ import os
 import json
 from collections import OrderedDict
 import detectron2.utils.comm as comm
+import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
+from detectron2.data import DatasetMapper, build_detection_train_loader
 
 from detectron2.data.datasets import register_coco_instances
 
@@ -20,6 +22,33 @@ from detectron2.evaluation import (
 from detectron2.modeling import GeneralizedRCNNWithTTA
 import pandas as pd
 
+
+def get_augs(cfg):
+    """Add all the desired augmentations here. A list of availble augmentations
+    can be found here: 
+        https://detectron2.readthedocs.io/en/latest/modules/data_transforms.html#detectron2.data.transforms.RandomRotation
+    """
+    augs = [
+        T.ResizeShortestEdge(
+            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+        )
+    ]
+    if cfg.INPUT.CROP.ENABLED:
+        augs.append(
+            T.RandomCrop_CategoryAreaConstraint(
+                cfg.INPUT.CROP.TYPE,
+                cfg.INPUT.CROP.SIZE,
+                cfg.INPUT.CROP.SINGLE_CATEGORY_MAX_AREA,
+                cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
+            )
+        )
+    horizontal_flip: bool = (cfg.INPUT.RANDOM_FLIP == 'horizontal')
+    augs.append(T.RandomFlip(horizontal=horizontal_flip,
+                             vertical=not horizontal_flip))
+    # Rotate the image between -90 to 0 degrees clockwise around the centre
+    augs.append(T.RandomRotation(angle=[90.0, 0.0]))
+    return augs
+
 class Trainer(DefaultTrainer):
     """
     We use the "DefaultTrainer" which contains pre-defined default logic for
@@ -28,6 +57,11 @@ class Trainer(DefaultTrainer):
     "SimpleTrainer", or write your own training loop. You can use
     "tools/plain_train_net.py" as an example.
     """
+
+    @classmethod
+    def build_train_loader(cls, cfg):
+        mapper = DatasetMapper(cfg, is_train=True, augmentations=get_augs(cfg))
+        return build_detection_train_loader(cfg, mapper=mapper)
 
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
