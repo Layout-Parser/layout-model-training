@@ -26,7 +26,7 @@ import pandas as pd
 def get_augs(cfg):
     """Add all the desired augmentations here. A list of availble augmentations
     can be found here: 
-        https://detectron2.readthedocs.io/en/latest/modules/data_transforms.html#detectron2.data.transforms.RandomRotation
+       https://detectron2.readthedocs.io/en/latest/modules/data_transforms.html
     """
     augs = [
         T.ResizeShortestEdge(
