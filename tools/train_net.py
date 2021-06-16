@@ -46,7 +46,7 @@ def get_augs(cfg):
     augs.append(T.RandomFlip(horizontal=horizontal_flip,
                              vertical=not horizontal_flip))
     # Rotate the image between -90 to 0 degrees clockwise around the centre
-    augs.append(T.RandomRotation(angle=[90.0, 0.0]))
+    augs.append(T.RandomRotation(angle=[-90.0, 0.0]))
     return augs
 
 class Trainer(DefaultTrainer):
@@ -171,11 +171,11 @@ if __name__ == "__main__":
     parser = default_argument_parser()
 
     # Extra Configurations for dataset names and paths
-    parser.add_argument("--dataset_name", default="", help="The Dataset Name")
+    parser.add_argument("--dataset_name",          default="", help="The Dataset Name")
     parser.add_argument("--json_annotation_train", default="", metavar="FILE", help="The path to the training set JSON annotation")
-    parser.add_argument("--image_path_train", default="", metavar="FILE", help="The path to the training set image folder")
-    parser.add_argument("--json_annotation_val", default="", metavar="FILE", help="The path to the validation set JSON annotation")
-    parser.add_argument("--image_path_val", default="", metavar="FILE", help="The path to the validation set image folder")
+    parser.add_argument("--image_path_train",      default="", metavar="FILE", help="The path to the training set image folder")
+    parser.add_argument("--json_annotation_val",   default="", metavar="FILE", help="The path to the validation set JSON annotation")
+    parser.add_argument("--image_path_val",        default="", metavar="FILE", help="The path to the validation set image folder")
 
     args = parser.parse_args()
     print("Command Line Args:", args)
