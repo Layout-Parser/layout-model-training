@@ -56,6 +56,9 @@ class Trainer(DefaultTrainer):
     are working on a new research project. In that case you can use the cleaner
     "SimpleTrainer", or write your own training loop. You can use
     "tools/plain_train_net.py" as an example.
+    
+    Adapted from:
+        https://github.com/facebookresearch/detectron2/blob/master/projects/DeepLab/train_net.py
     """
 
     @classmethod
