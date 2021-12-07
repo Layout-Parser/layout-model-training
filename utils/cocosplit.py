@@ -43,15 +43,15 @@ def main(annotation_path,
     tr_ann, ts_ann = train_test_split(img_ann, train_size=split_ratio,
                                       random_state=random_state)
 
-    # Images without annotations
-    img_wo_ann = funcy.lremove(lambda i: i['id'] in ids_with_annotations, images)
-    tr_wo_ann, ts_wo_ann = train_test_split(img_wo_ann, train_size=split_ratio,
-                                            random_state=random_state)
-
     if having_annotations:
         tr, ts = tr_ann, ts_ann
 
     else:
+        # Images without annotations
+        img_wo_ann = funcy.lremove(lambda i: i['id'] in ids_with_annotations, images)
+        tr_wo_ann, ts_wo_ann = train_test_split(img_wo_ann, train_size=split_ratio,
+                                                random_state=random_state)
+
         # Merging the 2 image lists (i.e. with and without annotation)
         tr_ann.extend(tr_wo_ann)
         ts_ann.extend(ts_wo_ann)
