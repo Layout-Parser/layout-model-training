@@ -49,6 +49,7 @@ def get_augs(cfg):
     augs.append(T.RandomRotation(angle=[-90.0, 0.0]))
     return augs
 
+
 class Trainer(DefaultTrainer):
     """
     We use the "DefaultTrainer" which contains pre-defined default logic for
@@ -56,7 +57,7 @@ class Trainer(DefaultTrainer):
     are working on a new research project. In that case you can use the cleaner
     "SimpleTrainer", or write your own training loop. You can use
     "tools/plain_train_net.py" as an example.
-    
+
     Adapted from:
         https://github.com/facebookresearch/detectron2/blob/master/projects/DeepLab/train_net.py
     """
@@ -85,7 +86,8 @@ class Trainer(DefaultTrainer):
         model = GeneralizedRCNNWithTTA(cfg, model)
         evaluators = [
             cls.build_evaluator(
-                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference_TTA")
+                cfg, name, output_folder=os.path.join(
+                    cfg.OUTPUT_DIR, "inference_TTA")
             )
             for name in cfg.DATASETS.TEST
         ]
@@ -97,7 +99,8 @@ class Trainer(DefaultTrainer):
     def eval_and_save(cls, cfg, model):
         evaluators = [
             cls.build_evaluator(
-                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference")
+                cfg, name, output_folder=os.path.join(
+                    cfg.OUTPUT_DIR, "inference")
             )
             for name in cfg.DATASETS.TEST
         ]
@@ -105,11 +108,14 @@ class Trainer(DefaultTrainer):
         pd.DataFrame(res).to_csv(os.path.join(cfg.OUTPUT_DIR, 'eval.csv'))
         return res
 
+
 def setup(args):
     """
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
+    # alter for multi-gpu training
+    #https://github.com/facebookresearch/detectron2/issues/253#issuecomment-554216517
     if args.config_file != "":
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -122,13 +128,21 @@ def setup(args):
 
     cfg.DATASETS.TRAIN = (f"{args.dataset_name}-train",)
     cfg.DATASETS.TEST = (f"{args.dataset_name}-val",)
-
     cfg.freeze()
     default_setup(cfg, args)
     return cfg
 
 
 def main(args):
+    # Register Datasets
+    dataset_name = args.dataset_name
+    register_coco_instances(f"{args.dataset_name}-train", {},
+                            args.json_annotation_train,
+                            args.image_path_train)
+
+    register_coco_instances(f"{args.dataset_name}-val", {},
+                            args.json_annotation_val,
+                            args.image_path_val)
     cfg = setup(args)
 
     if args.eval_only:
@@ -137,7 +151,7 @@ def main(args):
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
-    
+
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))
         if comm.is_main_process():
@@ -158,11 +172,12 @@ def main(args):
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
     trainer.register_hooks(
-            [hooks.EvalHook(0, lambda: trainer.eval_and_save(cfg, trainer.model))]
+        [hooks.EvalHook(0, lambda: trainer.eval_and_save(cfg, trainer.model))]
     )
     if cfg.TEST.AUG.ENABLED:
         trainer.register_hooks(
-            [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
+            [hooks.EvalHook(
+                0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
         )
     return trainer.train()
 
@@ -171,24 +186,28 @@ if __name__ == "__main__":
     parser = default_argument_parser()
 
     # Extra Configurations for dataset names and paths
-    parser.add_argument("--dataset_name",          default="", help="The Dataset Name")
-    parser.add_argument("--json_annotation_train", default="", metavar="FILE", help="The path to the training set JSON annotation")
-    parser.add_argument("--image_path_train",      default="", metavar="FILE", help="The path to the training set image folder")
-    parser.add_argument("--json_annotation_val",   default="", metavar="FILE", help="The path to the validation set JSON annotation")
-    parser.add_argument("--image_path_val",        default="", metavar="FILE", help="The path to the validation set image folder")
-
+    parser.add_argument("--dataset_name",
+                        default="", help="The Dataset Name")
+    parser.add_argument("--json_annotation_train", default="", metavar="FILE",
+                        help="The path to the training set JSON annotation")
+    parser.add_argument("--image_path_train",      default="",
+                        metavar="FILE", help="The path to the training set image folder")
+    parser.add_argument("--json_annotation_val",   default="", metavar="FILE",
+                        help="The path to the validation set JSON annotation")
+    parser.add_argument("--image_path_val",        default="",
+                        metavar="FILE", help="The path to the validation set image folder")
     args = parser.parse_args()
     print("Command Line Args:", args)
 
-    # Register Datasets 
-    dataset_name = args.dataset_name
-    register_coco_instances(f"{dataset_name}-train", {}, 
-                            args.json_annotation_train, 
-                            args.image_path_train)
+    # # Register Datasets
+    # dataset_name = args.dataset_name
+    # register_coco_instances(f"{dataset_name}-train", {},
+    #                         args.json_annotation_train,
+    #                         args.image_path_train)
 
-    register_coco_instances(f"{dataset_name}-val", {}, 
-                            args.json_annotation_val,   
-                            args.image_path_val)
+    # register_coco_instances(f"{dataset_name}-val", {},
+    #                         args.json_annotation_val,
+    #                         args.image_path_val)
 
     launch(
         main,
