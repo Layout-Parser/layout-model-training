@@ -114,8 +114,7 @@ def setup(args):
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
-    # alter for multi-gpu training
-    #https://github.com/facebookresearch/detectron2/issues/253#issuecomment-554216517
+    
     if args.config_file != "":
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -135,7 +134,6 @@ def setup(args):
 
 def main(args):
     # Register Datasets
-    dataset_name = args.dataset_name
     register_coco_instances(f"{args.dataset_name}-train", {},
                             args.json_annotation_train,
                             args.image_path_train)
@@ -199,15 +197,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("Command Line Args:", args)
 
-    # # Register Datasets
-    # dataset_name = args.dataset_name
-    # register_coco_instances(f"{dataset_name}-train", {},
-    #                         args.json_annotation_train,
-    #                         args.image_path_train)
-
-    # register_coco_instances(f"{dataset_name}-val", {},
-    #                         args.json_annotation_val,
-    #                         args.image_path_val)
+    # Dataset Registration is moved to the main function to support multi-gpu training
+    # See ref https://github.com/facebookresearch/detectron2/issues/253#issuecomment-554216517
 
     launch(
         main,
