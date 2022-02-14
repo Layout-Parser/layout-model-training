@@ -6,7 +6,7 @@ import funcy
 from sklearn.model_selection import train_test_split
 
 parser = argparse.ArgumentParser(description='Splits COCO annotations file into training and test sets.')
-parser.add_argument('--annotation_path', metavar='coco_annotations', type=str,
+parser.add_argument('--annotation-path', metavar='coco_annotations', type=str,
                     help='Path to COCO annotations file.')
 parser.add_argument('--train', type=str, help='Where to store COCO training annotations')
 parser.add_argument('--test', type=str, help='Where to store COCO test annotations')
@@ -43,15 +43,18 @@ def main(annotation_path,
     tr_ann, ts_ann = train_test_split(img_ann, train_size=split_ratio,
                                       random_state=random_state)
 
+    img_wo_ann = funcy.lremove(lambda i: i['id'] in ids_with_annotations, images)
+    if len(img_wo_ann) > 0:
+        tr_wo_ann, ts_wo_ann = train_test_split(img_wo_ann, train_size=split_ratio,
+                                             random_state=random_state)
+    else:
+        tr_wo_ann, ts_wo_ann = [], []# Images without annotations
+    
+    
     if having_annotations:
         tr, ts = tr_ann, ts_ann
 
     else:
-        # Images without annotations
-        img_wo_ann = funcy.lremove(lambda i: i['id'] in ids_with_annotations, images)
-        tr_wo_ann, ts_wo_ann = train_test_split(img_wo_ann, train_size=split_ratio,
-                                                random_state=random_state)
-
         # Merging the 2 image lists (i.e. with and without annotation)
         tr_ann.extend(tr_wo_ann)
         ts_ann.extend(ts_wo_ann)
