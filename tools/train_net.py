@@ -14,7 +14,13 @@ from detectron2.data import DatasetMapper, build_detection_train_loader
 
 from detectron2.data.datasets import register_coco_instances
 
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
+from detectron2.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    hooks,
+    launch,
+)
 from detectron2.evaluation import (
     COCOEvaluator,
     verify_results,
@@ -25,12 +31,14 @@ import pandas as pd
 
 def get_augs(cfg):
     """Add all the desired augmentations here. A list of availble augmentations
-    can be found here: 
+    can be found here:
        https://detectron2.readthedocs.io/en/latest/modules/data_transforms.html
     """
     augs = [
         T.ResizeShortestEdge(
-            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+            cfg.INPUT.MIN_SIZE_TRAIN,
+            cfg.INPUT.MAX_SIZE_TRAIN,
+            cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING,
         )
     ]
     if cfg.INPUT.CROP.ENABLED:
@@ -42,9 +50,8 @@ def get_augs(cfg):
                 cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
             )
         )
-    horizontal_flip: bool = (cfg.INPUT.RANDOM_FLIP == 'horizontal')
-    augs.append(T.RandomFlip(horizontal=horizontal_flip,
-                             vertical=not horizontal_flip))
+    horizontal_flip: bool = cfg.INPUT.RANDOM_FLIP == "horizontal"
+    augs.append(T.RandomFlip(horizontal=horizontal_flip, vertical=not horizontal_flip))
     # Rotate the image between -90 to 0 degrees clockwise around the centre
     augs.append(T.RandomRotation(angle=[-90.0, 0.0]))
     return augs
@@ -86,8 +93,7 @@ class Trainer(DefaultTrainer):
         model = GeneralizedRCNNWithTTA(cfg, model)
         evaluators = [
             cls.build_evaluator(
-                cfg, name, output_folder=os.path.join(
-                    cfg.OUTPUT_DIR, "inference_TTA")
+                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference_TTA")
             )
             for name in cfg.DATASETS.TEST
         ]
@@ -99,13 +105,12 @@ class Trainer(DefaultTrainer):
     def eval_and_save(cls, cfg, model):
         evaluators = [
             cls.build_evaluator(
-                cfg, name, output_folder=os.path.join(
-                    cfg.OUTPUT_DIR, "inference")
+                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference")
             )
             for name in cfg.DATASETS.TEST
         ]
         res = cls.test(cfg, model, evaluators)
-        pd.DataFrame(res).to_csv(os.path.join(cfg.OUTPUT_DIR, 'eval.csv'))
+        pd.DataFrame(res).to_csv(os.path.join(cfg.OUTPUT_DIR, "eval.csv"))
         return res
 
 
@@ -114,12 +119,12 @@ def setup(args):
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
-    
+
     if args.config_file != "":
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
 
-    with open(args.json_annotation_train, 'r') as fp:
+    with open(args.json_annotation_train, "r") as fp:
         anno_file = json.load(fp)
 
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(anno_file["categories"])
@@ -134,13 +139,19 @@ def setup(args):
 
 def main(args):
     # Register Datasets
-    register_coco_instances(f"{args.dataset_name}-train", {},
-                            args.json_annotation_train,
-                            args.image_path_train)
+    register_coco_instances(
+        f"{args.dataset_name}-train",
+        {},
+        args.json_annotation_train,
+        args.image_path_train,
+    )
 
-    register_coco_instances(f"{args.dataset_name}-val", {},
-                            args.json_annotation_val,
-                            args.image_path_val)
+    register_coco_instances(
+        f"{args.dataset_name}-val", 
+        {}, 
+        args.json_annotation_val, 
+        args.image_path_val
+    )
     cfg = setup(args)
 
     if args.eval_only:
@@ -156,7 +167,7 @@ def main(args):
             verify_results(cfg, res)
 
         # Save the evaluation results
-        pd.DataFrame(res).to_csv(f'{cfg.OUTPUT_DIR}/eval.csv')
+        pd.DataFrame(res).to_csv(f"{cfg.OUTPUT_DIR}/eval.csv")
         return res
 
     # Ensure that the Output directory exists
@@ -174,8 +185,7 @@ def main(args):
     )
     if cfg.TEST.AUG.ENABLED:
         trainer.register_hooks(
-            [hooks.EvalHook(
-                0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
+            [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
         )
     return trainer.train()
 
@@ -184,16 +194,25 @@ if __name__ == "__main__":
     parser = default_argument_parser()
 
     # Extra Configurations for dataset names and paths
-    parser.add_argument("--dataset_name",
-                        default="", help="The Dataset Name")
-    parser.add_argument("--json_annotation_train", default="", metavar="FILE",
-                        help="The path to the training set JSON annotation")
-    parser.add_argument("--image_path_train",      default="",
-                        metavar="FILE", help="The path to the training set image folder")
-    parser.add_argument("--json_annotation_val",   default="", metavar="FILE",
-                        help="The path to the validation set JSON annotation")
-    parser.add_argument("--image_path_val",        default="",
-                        metavar="FILE", help="The path to the validation set image folder")
+    parser.add_argument(
+        "--dataset_name", 
+        help="The Dataset Name")
+    parser.add_argument(
+        "--json_annotation_train",
+        help="The path to the training set JSON annotation",
+    )
+    parser.add_argument(
+        "--image_path_train",
+        help="The path to the training set image folder",
+    )
+    parser.add_argument(
+        "--json_annotation_val",
+        help="The path to the validation set JSON annotation",
+    )
+    parser.add_argument(
+        "--image_path_val",
+        help="The path to the validation set image folder",
+    )
     args = parser.parse_args()
     print("Command Line Args:", args)
 
