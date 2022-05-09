@@ -213,8 +213,33 @@ if __name__ == "__main__":
         "--image_path_val",
         help="The path to the validation set image folder",
     )
+    parser.add_argument("--lp_model", default="", help="The name of the layoutparser model")
+
     args = parser.parse_args()
     print("Command Line Args:", args)
+
+    if args.lp_model is not None:
+        
+        try:
+            from layoutparser.models.detectron2.catalog import PathManager
+        except ImportError:
+            print("Please install the latest version of layoutparser to use LP Model weights for fine-tuning.")
+            print("\t pip install layoutparser")
+            exit()
+        
+        assert args.lp_model.startswith("lp://"), "Please use Detectron2 models from https://layout-parser.github.io/platform/"
+
+        model_path = PathManager.get_local_path(args.lp_model.rstrip("/weight") + "/weight")
+        config_path = PathManager.get_local_path(args.lp_model.rstrip("/config") + "/config")
+
+        if "MODEL.WEIGHTS" in args.opts:
+            idx = args.opts.index("MODEL.WEIGHTS")
+            args.opts[idx+1] = model_path
+        else:
+            args.opts.extend(["MODEL.WEIGHTS", model_path])
+    
+        args.config_file = config_path
+            
 
     # Dataset Registration is moved to the main function to support multi-gpu training
     # See ref https://github.com/facebookresearch/detectron2/issues/253#issuecomment-554216517
